@@ -5,13 +5,7 @@ import os, math
 
 def GetWinner(board):
     """
-    Returns the winner in the current board if it exists, otherwise it returns None.
-
-    Parameters: 
-        board (list): The current board to check,  
-            ex: [1, "X", 3, 4, "O", "X", 7, 8, "O"]
-
-    Returns: "X" or "O" or None.
+    Returns the winner in the current board if there is one, otherwise it returns None.
     """
     # horizontal
     if board[0] == board[1] and board[1] == board[2]:
@@ -36,12 +30,6 @@ def GetWinner(board):
 def PrintBoard(board):
     """
     Clears the console and prints the current board.
-
-    Parameters: 
-        game (list): The current board to print, 
-            ex: [1, "X", 3, 4, "O", "X", 7, 8, "O"]
-
-    Returns: None.
     """
     os.system('cls' if os.name=='nt' else 'clear')
     print(f'''
@@ -52,13 +40,7 @@ def PrintBoard(board):
 
 def GetAvailableCells(board):
     """
-    Returns all available cells in a board.
-
-    Parameters: 
-        board (list): The board to get available cells from.
-
-    Returns: 
-        list: Available cells, ex: [1, 6, 9]
+    Returns a list of indices containing all available cells in a board.
     """
     available = list()
     for cell in board:
@@ -66,19 +48,10 @@ def GetAvailableCells(board):
             available.append(cell)
     return available
 
-def minimax(position, depth, isMaximizing):
+def minimax(position, depth, alpha, beta, isMaximizing):
     """
-    The AI algorithm responsible for choosing the best move.
-
-    Parameters:
-        position (list): current board position.
-        depth (int): depth.
-        isMaximizing: Maximizing: X, Minimizing: O.
-
-    Returns:
-        Best value of a move.
+    The AI algorithm responsible for choosing the best move. Returns best value of a move.
     """
-
     # evaluate current board: if maximizing player won -> return 10 
     #                         if minimizing player won -> return -10
     #                         if no one is winning (tie) -> return 0
@@ -104,17 +77,23 @@ def minimax(position, depth, isMaximizing):
         maxEval = -math.inf
         for cell in GetAvailableCells(position):
             position[cell - 1] = "X"
-            Eval = minimax(position, depth + 1, False)
+            Eval = minimax(position, depth + 1, alpha, beta, False)
             maxEval = max(maxEval, Eval)
+            alpha = max(alpha, Eval)
             position[cell - 1] = cell
+            if beta <= alpha:
+                break # prune
         return maxEval
-    else: # not maximizing:
+    else:
         minEval = +math.inf
         for cell in GetAvailableCells(position):
             position[cell - 1] = "O"
-            Eval = minimax(position, depth + 1, True)
+            Eval = minimax(position, depth + 1, alpha, beta, True)
             minEval = min(minEval, Eval)
+            beta = min(beta, Eval)
             position[cell - 1] = cell
+            if beta <= alpha:
+                break # prune
         return minEval
 
 def FindBestMove(currentPosition, AI):
@@ -128,13 +107,13 @@ def FindBestMove(currentPosition, AI):
         AI (str): The AI Player ("X" or "O").
 
     Returns:
-        int: Best move for the current position.
+        int: Index of best move for the current position.
     """
     bestVal = -math.inf if AI == "X" else +math.inf
     bestMove = -1
     for cell in GetAvailableCells(currentPosition):
         currentPosition[cell - 1] = AI
-        moveVal = minimax(currentPosition, 0, False if AI == "X" else True)
+        moveVal = minimax(currentPosition, 0, -math.inf, +math.inf, False if AI == "X" else True)
         currentPosition[cell - 1] = cell
         if (AI == "X" and moveVal > bestVal):
             bestMove = cell
@@ -153,12 +132,9 @@ def main():
     counter = 0
     while True:
         if currentTurn == AI:
-            # if the AI starts first, it'll always choose index 0 so to save time I already play it
-            if counter == 0:
-                currentGame[0] = AI
-            else:
-                cell = FindBestMove(currentGame, AI)
-                currentGame[cell - 1] = AI
+            # NOTE: if the AI starts first, it'll always choose index 0 so to save time you could play it.
+            cell = FindBestMove(currentGame, AI)
+            currentGame[cell - 1] = AI
             currentTurn = player
         elif currentTurn == player:
             PrintBoard(currentGame)
